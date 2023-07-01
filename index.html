@@ -193,6 +193,11 @@
                 restartGame();
                 $("#submit").click(checkInput);
                 $("#restart").click(restartGame);
+                $("#guess").on("keypress", function(event) {
+                    if (event.key == "Enter") {
+                        checkInput();
+                    }
+                });
             })
 
         </script>
