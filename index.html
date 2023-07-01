@@ -1,4 +1,4 @@
-<html lang="en">
+<html lang="en"> 
     <head>
         <meta name="viewport" content="width=device-width" charset="utf-8" initial-scale="1">
         <title>Wordle - By Gavin Grooms</title>
@@ -7,13 +7,14 @@
         <script>
             $(document).ready(() => {
                 //const words = ['hello', 'mummy', 'yummy', 'gifts', 'irons', 'bands', 'trick', 'pride', 'dummy'];
-                let word;
-                let tries;
 
                 //word = words[Math.floor(Math.random() * words.length)];
 
-                let guessNum = 1;
-                let usedLetters = new Array();
+                let wordle = {
+                    word : "",
+                    guessNum : 1,
+                    usedLetters : new Array()
+                };
                 
                 const setWord = () => {
                     const ajaxResponse = $.ajax({
@@ -27,21 +28,26 @@
                                 type: "GET",
                                 dataType: "json",
                                 success: function(result2){
-                                    if (result2[0].meta == null) { 
+                                    if (result2 === undefined || result2.length === 0) {
+                                        setWord();
+                                    }
+                                    else if (typeof result2[0].meta === 'object') {   
+                                        wordle.word = result1[0].toLowerCase();
+                                        console.log('Answer is: ' + wordle.word);
+                                        $('.content').removeClass("hide");
+                                        $('#loading').addClass("hide");
+                                        $('#answer-container').removeClass('hide');
+                                    } else {
                                         //Means word doesn't have a dictionary entry
                                         setWord();
-                                    } else {
-                                        word = result1[0].toLowerCase();
-                                        console.log('Answer is: ' + word);
-                                        $('#answer-container').removeClass('hide');
                                     }
                                 },
                                 error: function (request, status, error) {
+                                    m = JSON.parse(request.responseText);
+                                    console.log(m.message);
                                     alert("Something went wrong!");
-                                    $('#guess').val('');
-                                    }
-                            });
-                            
+                                }
+                            });                      
                         },
                         error: function (request, status, error) {
                             m = JSON.parse(request.responseText);
@@ -52,8 +58,9 @@
                 }
 
                 const checkInput = () => {
-                    if (guessNum > 6) {
+                    if (wordle.guessNum > 6) {
                         alert("You're all out of guesses! Try restarting the game!");
+                        //In case someone "unhides" submit button
                         return;
                     }
                     let input = $('#guess').val();
@@ -80,11 +87,15 @@
                         type: "GET",
                         dataType: "json",
                         success: function(result){
-                            if (result[0].meta == null) {
+                            console.log(JSON.stringify(result));
+                            if (result === undefined || result.length === 0) {
                                 alert(input + " is not a word!");
-                            } else {
+                            }
+                            else if (typeof result[0].meta === 'object') {
                                 console.log(input + " is a word!");
                                 compareWord(input);
+                            } else {
+                                alert(input + " is not a word!");
                             }
                         },
                         error: function (request, status, error) {
@@ -94,9 +105,9 @@
                     });
                 }
 
-                const compareWord = (guess, answer) => {
+                const compareWord = (guess) => {
                     let guessArr = guess.split('');
-                    let answerArr = word.split('');
+                    let answerArr = wordle.word.split('');
                     let foundArr = ['W', 'W', 'W', 'W', 'W'];
                     let counter = 0;
 
@@ -127,31 +138,34 @@
                 const displayResults = (foundArr, guessArr) => {
                     let div;
                     for (let i = 1; i <= foundArr.length; ++i) {
-                        div = $("#guess-" + guessNum + i);
+                        div = $("#guess-" + wordle.guessNum + i);
                         div.addClass(foundArr[i-1]);
                         div.html(guessArr[i-1].toUpperCase());
 
-                        if ($.inArray(guessArr[i-1].toUpperCase(), usedLetters) < 0) {
-                            usedLetters.push(guessArr[i-1].toUpperCase());
-                            usedLetters.sort();
+                        if ($.inArray(guessArr[i-1].toUpperCase(), wordle.usedLetters) < 0) {
+                            wordle.usedLetters.push(guessArr[i-1].toUpperCase());
+                            wordle.usedLetters.sort();
                         }
                     }
-                    guessNum++;
-                    $("#used-letters").html(usedLetters.join(', '));
+                    wordle.guessNum++;
+                    $("#used-letters").html(wordle.usedLetters.join(', '));
                     $("#guess").val('');
 
-                    if (guessNum > 6 || guessArr.join('') == word) {
+                    if (wordle.guessNum > 6 || guessArr.join('') == wordle.word) {
                         $('#restart').removeClass("hide");
                         $('#answer-container').addClass('hide');
                     }
-                    if (guessArr.join('') == word) {
+                    if (guessArr.join('') == wordle.word) {
                         $('#isWon').html("You won!<br><br>");
-                    } else if (guessNum > 6) {
-                        $('#isWon').html("You lost! The word was: " + word + "<br><br>");
+                    } else if (wordle.guessNum > 6) {
+                        $('#isWon').html("You lost! The word was: " + wordle.word + "<br><br>");
                     }
                 }
 
                 const restartGame = () => {
+                    $("#loading").removeClass("hide");
+                    $(".content").addClass("hide");
+
                     let div = document.getElementById("user-answers");
                     let i = 1;
                     div.innerHTML = "";
@@ -169,18 +183,18 @@
                         }
                     }
 
-                    guessNum = 1;
-                    usedLetters = new Array();
-                    setWord();
-                    $("#used-letters").html("");
+                    wordle.guessNum = 1;
+                    wordle.usedLetters = new Array();
+                    $("#used-letters").html('');
                     $('#guess').val('');
                     $('#restart').addClass("hide");
                     $('#isWon').html('');
+                    setWord();
                 }
 
+                restartGame();
                 $("#submit").click(checkInput);
                 $("#restart").click(restartGame);
-                restartGame();
             })
 
         </script>
@@ -189,9 +203,9 @@
         <div class="content">
             <h1>Welcome to Wordle!</h1>
             <div id="user-answers"></div>
-            <div id="answer-container">
+            <div id="answer-container" class="hide">
                 <label for="guess">Enter your guess here:</label>
-                <input type="text" id="guess" name="guess" maxlength="5" pattern="[A-Za-z]+">
+                <input type="text" id="guess" name="guess" maxlength="5">
                 <input type="button" id="submit" name="submit" value="Submit">
                 <br>
             </div>
@@ -201,5 +215,6 @@
             <div class="used-letters">Used Letters:</div><br>
             <div class="used-letters" id="used-letters"></div><br>
         </div>
+        <h2 id="loading">Loading...</h2>
     </body>
 </html>
