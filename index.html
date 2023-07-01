@@ -6,16 +6,15 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
         <script>
             $(document).ready(() => {
-                //const words = ['hello', 'mummy', 'yummy', 'gifts', 'irons', 'bands', 'trick', 'pride', 'dummy'];
-
-                //word = words[Math.floor(Math.random() * words.length)];
-
                 let wordle = {
                     word : "",
                     guessNum : 1,
                     usedLetters : new Array()
                 };
-                
+
+                //const words = ['hello', 'mummy', 'yummy', 'gifts', 'irons', 'bands', 'trick', 'pride', 'dummy'];
+                //wordle.word = words[Math.floor(Math.random() * words.length)];
+          
                 const setWord = () => {
                     const ajaxResponse = $.ajax({
                         url: "https://random-word-api.herokuapp.com/word?length=5",
@@ -87,7 +86,6 @@
                         type: "GET",
                         dataType: "json",
                         success: function(result){
-                            console.log(JSON.stringify(result));
                             if (result === undefined || result.length === 0) {
                                 alert(input + " is not a word!");
                             }
@@ -115,7 +113,7 @@
                         if (char == answerArr[counter]) {
                             foundArr[counter] = 'G';
                             answerArr[counter] = '$'; //can't count same letter twice
-                            guessArr[counter] = '#'; //don't want to match twice
+                            char = '#'; //don't want to match twice
                         }
                         ++counter;
                     });
@@ -126,7 +124,7 @@
                         if (index > -1 && foundArr[counter] != 'G') {
                             foundArr[counter] = 'Y';
                             answerArr[index] = '$';
-                            guessArr[counter] = '#';
+                            char = '#';
                         }
                         ++counter;
                     });

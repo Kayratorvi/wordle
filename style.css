@@ -1,18 +1,22 @@
 .letter-box {
     height: 50px;
     text-align: center;
-    padding: 10px;
+    padding: 9px;
     border-width: 2px;
     border-style: solid;
     border-color: #000;
     width: 50px;
     font-size: 44px;
     display: inline-block;
+    margin: 0 1px;
 }
 .content {
     width: 600px;
     margin: 0 auto;
     text-align: center;
+}
+body {
+    font-size: 16px;
 }
 .G {
     background-color: #008000;
@@ -40,7 +44,7 @@
         font-size: 44px;
     }
     #guess {
-        width: 160px;
+        width: 130px;
     }
     .content {
         width: 370px;
