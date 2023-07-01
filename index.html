@@ -6,8 +6,11 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
         <script>
             $(document).ready(() => {
+                //const words = ['hello', 'mummy', 'yummy', 'gifts', 'irons', 'bands', 'trick', 'pride', 'dummy'];
                 let word;
                 let tries;
+
+                //word = words[Math.floor(Math.random() * words.length)];
 
                 let guessNum = 1;
                 let usedLetters = new Array();
@@ -16,10 +19,29 @@
                     const ajaxResponse = $.ajax({
                         url: "https://random-word-api.herokuapp.com/word?length=5",
                         type: "GET",
-                        contentType: "application/json",
                         dataType: "json",
-                        success: function(result){
-                            word = result[0];
+                        success: function(result1){
+                            const ajaxResponse = $.ajax({
+                                url: "https://www.dictionaryapi.com/api/v3/references/collegiate/json/" + result1[0].toLowerCase() + "?key=835abff3-8289-400c-ab33-b63cb92af3bb", 
+                                //My personal API key, please do not share
+                                type: "GET",
+                                dataType: "json",
+                                success: function(result2){
+                                    if (result2[0].meta == null) { 
+                                        //Means word doesn't have a dictionary entry
+                                        setWord();
+                                    } else {
+                                        word = result1[0].toLowerCase();
+                                        console.log('Answer is: ' + word);
+                                        $('#answer-container').removeClass('hide');
+                                    }
+                                },
+                                error: function (request, status, error) {
+                                    alert("Something went wrong!");
+                                    $('#guess').val('');
+                                    }
+                            });
+                            
                         },
                         error: function (request, status, error) {
                             m = JSON.parse(request.responseText);
@@ -31,9 +53,15 @@
 
                 const checkInput = () => {
                     if (guessNum > 6) {
-                        return; //Alrady used all 6 guesses
+                        alert("You're all out of guesses! Try restarting the game!");
+                        return;
                     }
                     let input = $('#guess').val();
+                    
+                    if (input.length < 1) {
+                        return;
+                    }
+
                     const regex = /^[A-Za-z]+$/;
                     if (!regex.test(input)) {
                         alert("Please enter only English letters!");
@@ -41,23 +69,26 @@
                     } else if (input.length < 5) {
                         alert("Please enter a five letter word!");
                     } else {
-                        isWord(input);             
+                        isWord(input.toLowerCase());             
                     }
                 }
 
                 const isWord = (input) => {
                     const ajaxResponse = $.ajax({
-                        url: "https://api.dictionaryapi.dev/api/v2/entries/en/" + input,
+                        url: "https://www.dictionaryapi.com/api/v3/references/collegiate/json/" + input + "?key=835abff3-8289-400c-ab33-b63cb92af3bb", 
+                        //My personal API key, please do not share
                         type: "GET",
-                        contentType: "application/json",
                         dataType: "json",
                         success: function(result){
-                            console.log(input + " - Definition: " + result[0].meanings[0].definitions[0].definition);
-                            compareWord(input);
+                            if (result[0].meta == null) {
+                                alert(input + " is not a word!");
+                            } else {
+                                console.log(input + " is a word!");
+                                compareWord(input);
+                            }
                         },
                         error: function (request, status, error) {
-                            m = JSON.parse(request.responseText);
-                            alert(m.message + " " + input + " must not be a word.");
+                            alert("Something went wrong!");
                             $('#guess').val('');
                         }
                     });
@@ -107,14 +138,16 @@
                     }
                     guessNum++;
                     $("#used-letters").html(usedLetters.join(', '));
+                    $("#guess").val('');
 
                     if (guessNum > 6 || guessArr.join('') == word) {
                         $('#restart').removeClass("hide");
+                        $('#answer-container').addClass('hide');
                     }
                     if (guessArr.join('') == word) {
                         $('#isWon').html("You won!<br><br>");
                     } else if (guessNum > 6) {
-                        $('#isWon').html("You lost!<br><br>");
+                        $('#isWon').html("You lost! The word was: " + word + "<br><br>");
                     }
                 }
 
@@ -160,10 +193,10 @@
                 <label for="guess">Enter your guess here:</label>
                 <input type="text" id="guess" name="guess" maxlength="5" pattern="[A-Za-z]+">
                 <input type="button" id="submit" name="submit" value="Submit">
-                <br><br>
-                <div id="isWon"></div>
-                <input type="button" id="restart" name="restart" value="Restart Game">
+                <br>
             </div>
+            <div id="isWon"></div>
+            <input type="button" id="restart" name="restart" value="Restart Game">
             <br>
             <div class="used-letters">Used Letters:</div><br>
             <div class="used-letters" id="used-letters"></div><br>
