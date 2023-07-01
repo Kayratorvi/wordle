@@ -1,0 +1,172 @@
+<html lang="en">
+    <head>
+        <meta name="viewport" content="width=device-width" charset="utf-8" initial-scale="1">
+        <title>Wordle - By Gavin Grooms</title>
+        <link rel="stylesheet" href="./style.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+        <script>
+            $(document).ready(() => {
+                let word;
+                let tries;
+
+                let guessNum = 1;
+                let usedLetters = new Array();
+                
+                const setWord = () => {
+                    const ajaxResponse = $.ajax({
+                        url: "https://random-word-api.herokuapp.com/word?length=5",
+                        type: "GET",
+                        contentType: "application/json",
+                        dataType: "json",
+                        success: function(result){
+                            word = result[0];
+                        },
+                        error: function (request, status, error) {
+                            m = JSON.parse(request.responseText);
+                            console.log(m.message);
+                            alert("Something went wrong!");
+                        }
+                    })
+                }
+
+                const checkInput = () => {
+                    if (guessNum > 6) {
+                        return; //Alrady used all 6 guesses
+                    }
+                    let input = $('#guess').val();
+                    const regex = /^[A-Za-z]+$/;
+                    if (!regex.test(input)) {
+                        alert("Please enter only English letters!");
+                        $('#guess').val('');
+                    } else if (input.length < 5) {
+                        alert("Please enter a five letter word!");
+                    } else {
+                        isWord(input);             
+                    }
+                }
+
+                const isWord = (input) => {
+                    const ajaxResponse = $.ajax({
+                        url: "https://api.dictionaryapi.dev/api/v2/entries/en/" + input,
+                        type: "GET",
+                        contentType: "application/json",
+                        dataType: "json",
+                        success: function(result){
+                            console.log(input + " - Definition: " + result[0].meanings[0].definitions[0].definition);
+                            compareWord(input);
+                        },
+                        error: function (request, status, error) {
+                            m = JSON.parse(request.responseText);
+                            alert(m.message + " " + input + " must not be a word.");
+                            $('#guess').val('');
+                        }
+                    });
+                }
+
+                const compareWord = (guess, answer) => {
+                    let guessArr = guess.split('');
+                    let answerArr = word.split('');
+                    let foundArr = ['W', 'W', 'W', 'W', 'W'];
+                    let counter = 0;
+
+                    guessArr.forEach((char) => {
+                        if (char == answerArr[counter]) {
+                            foundArr[counter] = 'G';
+                            answerArr[counter] = '$'; //can't count same letter twice
+                            guessArr[counter] = '#'; //don't want to match twice
+                        }
+                        ++counter;
+                    });
+
+                    counter = 0;
+                    guessArr.forEach((char) => {
+                        let index = $.inArray(char, answerArr);
+                        if (index > -1 && foundArr[counter] != 'G') {
+                            foundArr[counter] = 'Y';
+                            answerArr[index] = '$';
+                            guessArr[counter] = '#';
+                        }
+                        ++counter;
+                    });
+                    guessArr = guess.split('');
+
+                    displayResults(foundArr, guessArr);
+                }
+
+                const displayResults = (foundArr, guessArr) => {
+                    let div;
+                    for (let i = 1; i <= foundArr.length; ++i) {
+                        div = $("#guess-" + guessNum + i);
+                        div.addClass(foundArr[i-1]);
+                        div.html(guessArr[i-1].toUpperCase());
+
+                        if ($.inArray(guessArr[i-1].toUpperCase(), usedLetters) < 0) {
+                            usedLetters.push(guessArr[i-1].toUpperCase());
+                            usedLetters.sort();
+                        }
+                    }
+                    guessNum++;
+                    $("#used-letters").html(usedLetters.join(', '));
+
+                    if (guessNum > 6 || guessArr.join('') == word) {
+                        $('#restart').removeClass("hide");
+                    }
+                    if (guessArr.join('') == word) {
+                        $('#isWon').html("You won!<br><br>");
+                    } else if (guessNum > 6) {
+                        $('#isWon').html("You lost!<br><br>");
+                    }
+                }
+
+                const restartGame = () => {
+                    let div = document.getElementById("user-answers");
+                    let i = 1;
+                    div.innerHTML = "";
+
+                    for (i = 1; i <= 6; ++i) {
+                        div.innerHTML += `<div class="row" id="row-` + i + `"></div><br>`;
+                        
+                    }
+
+                    let divRows = document.getElementsByClassName("row");
+
+                    for (i = 1; i <= 6; ++i) {
+                        for (let j = 1; j <= 5; ++j) {
+                            divRows[i - 1].innerHTML += `<div class="letter-box" id="guess-` + i + j + `"></div>`;
+                        }
+                    }
+
+                    guessNum = 1;
+                    usedLetters = new Array();
+                    setWord();
+                    $("#used-letters").html("");
+                    $('#guess').val('');
+                    $('#restart').addClass("hide");
+                    $('#isWon').html('');
+                }
+
+                $("#submit").click(checkInput);
+                $("#restart").click(restartGame);
+                restartGame();
+            })
+
+        </script>
+    </head>
+    <body>
+        <div class="content">
+            <h1>Welcome to Wordle!</h1>
+            <div id="user-answers"></div>
+            <div id="answer-container">
+                <label for="guess">Enter your guess here:</label>
+                <input type="text" id="guess" name="guess" maxlength="5" pattern="[A-Za-z]+">
+                <input type="button" id="submit" name="submit" value="Submit">
+                <br><br>
+                <div id="isWon"></div>
+                <input type="button" id="restart" name="restart" value="Restart Game">
+            </div>
+            <br>
+            <div class="used-letters">Used Letters:</div><br>
+            <div class="used-letters" id="used-letters"></div><br>
+        </div>
+    </body>
+</html>
